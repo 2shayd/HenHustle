@@ -2,31 +2,33 @@
 //create canvas
 var canvas = document.createElement('canvas');
 var ctx = canvas.getContext('2d');
-canvas.width = 500;
-canvas.height = 500;
+canvas.width = 1000;
+canvas.height = 1000;
 document.body.appendChild(canvas);
 
 
 // variables
-let rows;
-let cols;
+let rows = 1;
+let cols = 4;
 
-let trackRight;
-let trackUp;
-let trackDown;
-let trackLeft;
+let trackRight = 0;
+let trackUp = 0;
+let trackDown = 0;
+let trackLeft = 0;
 
 let counter = 0;
 
-let spriteWidth;
-let spriteHeight;
-let width;
-let height;
+let spriteWidth = 640;
+let spriteHeight = 160;
+let width = spriteWidth / cols;
+let height = spriteHeight / rows;
 
-let curXFrame;
-let frameCount;
-let srcX;
-let srcY;
+let curXFrame = 0;
+let frameCount = 4;
+let srcX = 0;
+let srcY = 0;
+
+// srcX = curXFrame * width;
 
 let right;
 let up;
@@ -78,8 +80,8 @@ carImage.src = "spritesheets/car-spritesheet.png"; //car image
 //Game objects
 var hen = {
     speed: 256, //movement in pixels per second
-    x: 50,
-    y: 50
+    x: 100,
+    y: 100
 };
 var car = {
     speed: 150,
@@ -116,38 +118,57 @@ addEventListener("keyup", function (e) {
 }, false);
 
 function update(modifier){
-    //hen movement
-    ctx.clearRect(hen.x, hen.y, width, height);
+    left = false;
+    right = false;
+    up = false;
+    down = false;
 
 	if (38 in keysDown) { // Player holding up
 		hen.y -= hen.speed * modifier;
         up = true;
-        right = false;
-        down = false;
-        left = false;
 	}
 	else if (40 in keysDown) { // Player holding down
 		hen.y += hen.speed * modifier;
-        up = false;
-        right = false;
         down = true;
-        left = false;
 	}
 	else if (37 in keysDown) { // Player holding left
 		hen.x -= hen.speed * modifier;
-        up = false;
-        right = false;
-        down = false;
         left = true;
-
 	}
 	else if (39 in keysDown) { // Player holding right
 		hen.x += hen.speed * modifier;
-        up = false;
         right = true;
-        down = false;
-        left = false;
 	}
+
+    srcX = curXFrame * width; //update the x coordinate of the spritesheet
+    //update the y coordinate of the spritesheet
+    if (up) {
+        srcY = trackUp * width;
+    }
+    else if (down) {
+        srcY = trackDown * width;
+    }
+    else if (right) {
+        srcY = trackRight * height;
+    }
+    else if (left) {
+        srcY = trackLeft * height; 
+    }
+    else {
+        srcX = 0;
+        srcY = 0;
+    }
+
+    if (counter < 20) {
+    counter += 1;
+    }
+    else if (counter == 20) {
+        curXFrame = ++curXFrame % frameCount;
+        counter = 0;
+    } else {
+        counter++;
+    };
+
     //car movement
     // if (car.x < 0 || car.x > canvas.width) {
     //     dx = -dx;
@@ -164,22 +185,6 @@ function update(modifier){
         reset()
 	}
     
-    if (up) {
-        srcY = trackUp * width;
-    }
-    else if (down) {
-        srcY = trackDown * width;
-    }
-    else if (right) {
-        srcY = trackRight * width;
-    }
-    else if (left) {
-        srcY = trackLeft * width; 
-    }
-    else if (right == false && up == false && down == false && left == false) {
-        srcX = 1 * width;
-        srcY = 2 * height;
-    }
 };
 
 function render(){
@@ -190,7 +195,6 @@ function render(){
     if(henReady) {
         console.log('henReady');
         ctx.drawImage(henImage, srcX, srcY, width, height, hen.x, hen.y, width, height);
-        animateHen();
     }
     if(carReady) {
         console.log('carReady');
@@ -203,42 +207,18 @@ function reset(){
     hen.y = canvas.height -30;
 };
 
-function animateHen() {
-    var rows = 1;
-    var cols = 4;
+// function animateHen(left, right, up, down) {    
+//     if (curXFrame < 4) {
+//         curXFrame += 1;
+//     };
 
-    var trackRight = 1;
-    var trackUp = 1;
-    var trackDown = 1;
-    var trackLeft = 1;
-
-    var counter = 0;
-
-    var spriteWidth = 640;
-    var spriteHeight = 160;
-    var width = spriteWidth / cols;
-    var height = spriteHeight / rows;
-
-    var curXFrame = 0;
-    var frameCount = 4;
-    var srcX = 0;
-    var srcY = 0;
-
-    var right = true;
-
-    srcX = curXFrame * width;
-    
-    if (frameCount < 4) {
-        frameCount += 1;
-    };
-
-    if (counter == 4) {
-        curXFrame = ++curXFrame % frameCount;
-        counter = 0;
-    } else {
-        counter++;
-    };
-};
+//     if (counter == 4) {
+//         curXFrame = ++curXFrame % frameCount;
+//         counter = 0;
+//     } else {
+//         counter++;
+//     };
+// };
 
 
 
