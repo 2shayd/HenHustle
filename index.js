@@ -2,12 +2,12 @@
 //create canvas
 var canvas = document.createElement('canvas');
 var ctx = canvas.getContext('2d');
-canvas.width = 1000;
-canvas.height = 1000;
+canvas.width = 800;
+canvas.height = 800;
 document.body.appendChild(canvas);
 
 
-// variables
+// variables for animations
 let rows = 1;
 let cols = 4;
 
@@ -22,76 +22,90 @@ let spriteWidth = 640;
 let spriteHeight = 160;
 let width = spriteWidth / cols;
 let height = spriteHeight / rows;
+console.log(width);
+console.log(height);
 
 let curXFrame = 0;
 let frameCount = 4;
 let srcX = 0;
 let srcY = 0;
 
-// srcX = curXFrame * width;
-
 let right;
 let up;
 let down;
 let left;
 
-let x = canvas.width /2;
-let y = canvas.height - 30;
-const dx = 2;
-const dy = -2;
+
+// Define the starting point (A) and ending point (B)
+var pointA = { x: 0, y: 0 };
+var pointB = { x: 100, y: 100 };
+
+// Define the car's progress from A to B (0 = at A, 1 = at B)
+var progress = 0;
+
+
+
 
 //keyboard controls
 var keysDown = {};
 
+//~~~~~~~~~~~~IMAGES~~~~~~~~~~~~~~
 // Background image
 var bgReady = false;
 var bgImage = new Image();
 bgImage.onload = function () {
     bgReady = true;
 };
-
+//flower image
+var flowerReady = false;
+var flowerImage = new Image();
+flowerImage.onload = function () {
+    flowerReady = true;
+};
 //Hen images
 var henReady = false;
+var hitReady = false;
+var winReady = false;
 var henImage = new Image();
 var hitImage = new Image();
+var winImage = new Image();
 henImage.onload = function () {
     henReady = true;
 };
-hitImage.onload = function () {
-    henReady = true;
-};
-
-//Car images
+//car images
 var carReady = false;
 var carImage = new Image();
 carImage.onload = function () {
     carReady = true;
 };
-
-//~~~~~~~~~~~~END OF IMAGES~~~~~~~~~~~~~~
-
 //image sources
-
+winImage.src = "other imgs/win.png"; //win image
 bgImage.src = "other imgs/background.jpeg"; //background image
 henImage.src = "spritesheets/hen-spritesheet.png"; //hen image
 hitImage.src = "spritesheets/hit-spritesheet.png"; //hen hit image
 carImage.src = "spritesheets/car-spritesheet.png"; //car image
+flowerImage.src = "other imgs/flower.png"; //flower image
+//~~~~~~~~~~~~END OF IMAGES~~~~~~~~~~~~~~
 
 //Game objects
 var hen = {
     speed: 256, //movement in pixels per second
     x: 100,
-    y: 100
+    y: 600
 };
 var car = {
     speed: 150,
     x: 0,
     y: 0
 };
+var flower = {
+    x: 600,
+    y: 100
+};
 
 //play now!
 var then = Date.now();
-// reset();
+
 main(); //call the main game loop
 
 //main game loop
@@ -101,14 +115,16 @@ function main(){
 
     update(delta / 1000);
     render();
+    updateCarPosition();
 
     then = now;
 
     requestAnimationFrame(main);
 };
 
-// Handle keyboard controls
 
+
+// Handle keyboard controls
 addEventListener("keydown", function (e) {
     keysDown[e.keyCode] = true;
 }, false);
@@ -141,6 +157,7 @@ function update(modifier){
 	}
 
     srcX = curXFrame * width; //update the x coordinate of the spritesheet
+    
     //update the y coordinate of the spritesheet
     if (up) {
         srcY = trackUp * width;
@@ -169,62 +186,57 @@ function update(modifier){
         counter++;
     };
 
-    //car movement
-    // if (car.x < 0 || car.x > canvas.width) {
-    //     dx = -dx;
-    // }
-
-	// Are they touching?
-	if ((hen.x <= car.x) && (car.x <= hen.x) && (hen.y <= car.y) && (car.y <= hen.y)) {
-        ctx.clearRect(hen.x, hen.y, width, height);
-        hen.speed = 0;
-        ctx.drawImage(hitImage, hen.x, hen.y);
-        
-        curXFrame = ++curXFrame % frameCount;
-        srcX = curXFrame * width;
-        reset()
-	}
-    
+    if (checkCollision(hen, car)) {
+        console.log('hit');
+        henReady = false;
+        hitReady = true;
+        reset();
+    }
+    if (checkCollision(hen, flower)) {
+        console.log('win');
+        henReady = false;
+        flowerReady = false;
+        winReady = true;
+        reset();
+    }
 };
-
 function render(){
     if(bgReady) {
-        console.log('bgReady');
         ctx.drawImage(bgImage, 0, 0);
     }
     if(henReady) {
-        console.log('henReady');
         ctx.drawImage(henImage, srcX, srcY, width, height, hen.x, hen.y, width, height);
     }
-    if(carReady) {
-        console.log('carReady');
-
+    if(winReady) {
+        ctx.drawImage(winImage, hen.x, hen.y, width, height);
     }
+    if(hitReady) {
+        ctx.drawImage(hitImage, hen.x, hen.y, width, height);
+    }
+    if(carReady) {
+        ctx.drawImage(carImage, car.x, car.y);
+    }
+    if(flowerReady) {
+        ctx.drawImage(flowerImage, flower.x, flower.y, 150, 150);
+    }
+};
+function checkCollision(obj1, obj2) {
+    return obj1.x < (obj2.x + width) &&
+        (obj1.x + width) > obj2.x &&
+        obj1.y < (obj2.y + height) &&
+        (obj1.y + height) > obj2.y;
 };
 
 function reset(){
-    hen.x = canvas.width / 2;
-    hen.y = canvas.height -30;
+    winReady = false;
+    hitReady = false;
+    henReady = true;
+    flowerReady = true;
+    hen.speed = 256;
+    hen.x = 100;
+    hen.y = 600;
 };
 
-// function animateHen(left, right, up, down) {    
-//     if (curXFrame < 4) {
-//         curXFrame += 1;
-//     };
-
-//     if (counter == 4) {
-//         curXFrame = ++curXFrame % frameCount;
-//         counter = 0;
-//     } else {
-//         counter++;
-//     };
-// };
-
-
-
-// function animateHen(){
-//     srcX = curXFrame * width;
-//     ctx.drawImage(henImage, srcX, srcY, width, height, hen.x, hen.y, width, height);
-//     if (frameCount < 4) {
-//         frameCount += 1;
-//     }
+function updateCarPosition() {
+    
+}
