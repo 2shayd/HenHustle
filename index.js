@@ -125,6 +125,7 @@ main(); //call the main game loop
 
 //main game loop
 function main(){
+
     var now = Date.now();
     var delta = now - then;
 
@@ -134,6 +135,7 @@ function main(){
     then = now;
 
     requestAnimationFrame(main);
+
 };
 
 // Handle keyboard controls
