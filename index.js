@@ -102,6 +102,14 @@ var flower = {
     x: 600,
     y: 100
 };
+// sounds 
+var bgMusic = new Audio ("sounds/gametrack.mp3");
+bgMusic.loop = true;
+var lose = new Audio("sounds/lose2.mp3");
+var win = new Audio ("sounds/win.mp3");
+
+
+
 
 //play now!
 var then = Date.now();
@@ -110,6 +118,12 @@ main(); //call the main game loop
 
 //main game loop
 function main(){
+    if (bgMusic.paused) {
+        bgMusic.play().catch(function(error) {
+            console.log("Playback failed. User has not interacted with document yet.");
+        });
+    }
+
     var now = Date.now();
     var delta = now - then;
 
@@ -120,6 +134,7 @@ function main(){
     then = now;
 
     requestAnimationFrame(main);
+
 };
 
 
@@ -194,6 +209,21 @@ function update(modifier){
     }
     if (checkCollision(hen, flower)) {
         console.log('win');
+        henReady = false;
+        flowerReady = false;
+        winReady = true;
+        reset();
+    }
+    if (checkCollision(hen, car)) {
+        console.log('hit');
+        lose.play(); // Play car honk sound
+        henReady = false;
+        hitReady = true;
+        reset();
+    }
+    if (checkCollision(hen, flower)) {
+        console.log('win');
+        win.play(); // 
         henReady = false;
         flowerReady = false;
         winReady = true;
