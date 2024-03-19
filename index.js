@@ -6,8 +6,7 @@ canvas.width = 800;
 canvas.height = 800;
 document.body.appendChild(canvas);
 
-
-// variables for animations
+//hen animation variables
 let rows = 1;
 let cols = 4;
 
@@ -22,8 +21,6 @@ let spriteWidth = 640;
 let spriteHeight = 160;
 let width = spriteWidth / cols;
 let height = spriteHeight / rows;
-console.log(width);
-console.log(height);
 
 let curXFrame = 0;
 let frameCount = 4;
@@ -35,16 +32,16 @@ let up;
 let down;
 let left;
 
+//car spritesheet variables
+let cspriteWidth = 630;
+let cspriteHeight = 105;
+let cwidth = cspriteWidth / 6;
+let cheight = cspriteHeight / 1;
 
-// Define the starting point (A) and ending point (B)
-var pointA = { x: 0, y: 0 };
-var pointB = { x: 100, y: 100 };
-
-// Define the car's progress from A to B (0 = at A, 1 = at B)
-var progress = 0;
-
-
-
+let ccurXFrame = 0;
+let cframeCount = 6;
+let csrcX = 0;
+let csrcY = 0;
 
 //keyboard controls
 var keysDown = {};
@@ -82,7 +79,7 @@ carImage.onload = function () {
 winImage.src = "other imgs/win.png"; //win image
 bgImage.src = "other imgs/background.jpeg"; //background image
 henImage.src = "spritesheets/hen-spritesheet.png"; //hen image
-hitImage.src = "spritesheets/hit-spritesheet.png"; //hen hit image
+hitImage.src = "other imgs/hit.png"; //hen hit image
 carImage.src = "spritesheets/car-spritesheet.png"; //car image
 flowerImage.src = "other imgs/flower.png"; //flower image
 //~~~~~~~~~~~~END OF IMAGES~~~~~~~~~~~~~~
@@ -94,14 +91,32 @@ var hen = {
     y: 600
 };
 var car = {
-    speed: 150,
+    speed: 5,
     x: 0,
-    y: 0
+    y: 100
 };
 var flower = {
     x: 600,
     y: 100
 };
+let pointA = {
+    x: 0, 
+    y: 100
+};
+let pointB = {
+    x: 800,
+    y: 800
+};
+
+//car's movement path
+let slope = (pointB.y - pointA.y) / (pointB.x - pointA.x);
+
+//sounds
+var bgMusic = new Audio ("sounds/gametrack.mp3");
+bgMusic.loop = true;
+var lose = new Audio("sounds/sounds_lose.mp3");
+var win = new Audio ("sounds/win.mp3");
+
 
 //play now!
 var then = Date.now();
@@ -115,14 +130,11 @@ function main(){
 
     update(delta / 1000);
     render();
-    updateCarPosition();
 
     then = now;
 
     requestAnimationFrame(main);
 };
-
-
 
 // Handle keyboard controls
 addEventListener("keydown", function (e) {
@@ -134,10 +146,15 @@ addEventListener("keyup", function (e) {
 }, false);
 
 function update(modifier){
+
     left = false;
     right = false;
     up = false;
     down = false;
+
+    if (38 in keysDown || 40 in keysDown || 37 in keysDown || 39 in keysDown && !bgMusic.paused) {
+        bgMusic.play();
+    }
 
 	if (38 in keysDown) { // Player holding up
 		hen.y -= hen.speed * modifier;
@@ -156,9 +173,9 @@ function update(modifier){
         right = true;
 	}
 
-    srcX = curXFrame * width; //update the x coordinate of the spritesheet
+    srcX = curXFrame * width; //update the x coordinate of the hen spritesheet
     
-    //update the y coordinate of the spritesheet
+    //update the y coordinate of the hen spritesheet
     if (up) {
         srcY = trackUp * width;
     }
@@ -177,7 +194,7 @@ function update(modifier){
     }
 
     if (counter < 20) {
-    counter += 1;
+        counter += 1;
     }
     else if (counter == 20) {
         curXFrame = ++curXFrame % frameCount;
@@ -185,24 +202,47 @@ function update(modifier){
     } else {
         counter++;
     };
-
+    if (car.x <= pointB.x && car.y <= pointB.y) {
+        car.x += car.speed;
+        car.y += slope * car.speed;
+    }
+    if (car.x >= pointB.x || car.y >= pointB.y) {
+        resetCar();
+    };
+    
     if (checkCollision(hen, car)) {
-        console.log('hit');
+        bgMusic.pause();
+        lose.play();
+        hen.speed = 0;
         henReady = false;
         hitReady = true;
-        reset();
+        let interval = setInterval(() => {
+            reset()
+            clearInterval(interval);
+        }, 1000);
     }
     if (checkCollision(hen, flower)) {
-        console.log('win');
+        hen.speed = 0;
+        bgMusic.pause();
+        win.play();
         henReady = false;
         flowerReady = false;
         winReady = true;
-        reset();
+        let interval = setInterval(() => {
+            reset()
+            clearInterval(interval);
+        }, 2000);
     }
 };
 function render(){
     if(bgReady) {
         ctx.drawImage(bgImage, 0, 0);
+    }
+    if(flowerReady) {
+        ctx.drawImage(flowerImage, flower.x, flower.y, 200, 200);
+    }
+    if(carReady) {
+        ctx.drawImage(carImage, csrcX, csrcY, cwidth, cheight, car.x, car.y, width, height);
     }
     if(henReady) {
         ctx.drawImage(henImage, srcX, srcY, width, height, hen.x, hen.y, width, height);
@@ -213,30 +253,54 @@ function render(){
     if(hitReady) {
         ctx.drawImage(hitImage, hen.x, hen.y, width, height);
     }
-    if(carReady) {
-        ctx.drawImage(carImage, car.x, car.y);
-    }
-    if(flowerReady) {
-        ctx.drawImage(flowerImage, flower.x, flower.y, 150, 150);
-    }
-};
-function checkCollision(obj1, obj2) {
-    return obj1.x < (obj2.x + width) &&
-        (obj1.x + width) > obj2.x &&
-        obj1.y < (obj2.y + height) &&
-        (obj1.y + height) > obj2.y;
 };
 
+//check if hen and car or flower are touching
+function checkCollision(obj1, obj2) {
+    return obj1.x < (obj2.x + 20) &&
+        (obj1.x + 20) > obj2.x &&
+        obj1.y < (obj2.y + 20) &&
+        (obj1.y + 20) > obj2.y;
+};
+
+//reset hen position after win or hit
 function reset(){
     winReady = false;
     hitReady = false;
     henReady = true;
     flowerReady = true;
+    carReady = true;
     hen.speed = 256;
     hen.x = 100;
     hen.y = 600;
 };
 
-function updateCarPosition() {
-    
-}
+//spawn car on new route in new color
+function resetCar(){
+    let randomNum = Math.floor(Math.random() * 5); //random number between 0 and 4
+    let carArray = [0, 100, 200, 300, 400];
+    switch (randomNum) {
+        case 0: 
+            csrcX = 105;
+            break
+        case 1:
+            csrcX = 210;
+            break;
+        case 2:
+            csrcX = 315;
+            break;
+        case 3:
+            csrcX = 420;
+            break;
+        case 4:
+            csrcX = 525;
+            break;
+        default:
+            csrcX = 0;
+            break;
+    };
+    car.x = 0;
+    car.y = carArray[randomNum];
+    pointA.x = 0;
+    pointA.y = parseInt(carArray[randomNum]);
+};
